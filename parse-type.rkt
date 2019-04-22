@@ -43,9 +43,11 @@
 (define is_function?
   (lambda(expr)
     (match expr
+      [(id x)#f]
       [(num x)#f]
       [(add exp1 exp2)#f]
       [(sub exp1 exp2)#f]
+      [(app f b)#f]
       [(fun id type-parameter body type-return)#t]
       )
     )
@@ -68,7 +70,7 @@
 (define (typeof expr)
   (match expr
     [(num x)(TNum)]
-    [(id x)(error "Type error: free identifier:" x)]
+    ;[(id x)(error "Type error: free identifier:" x)]
     [(add exp1 exp2)(TNum)]
     [(sub exp1 exp2)(TNum)]
     [(app exp1 exp2)(if (not (is_function? exp1))
@@ -106,3 +108,41 @@
 (test (parse '{fun {x : {Num -> Num}}{+ x y}}) (fun 'x (TFun (TNum)(TNum)) (add (id 'x) (id 'y)) #f))
 (test (parse '{fun {x : Num} : Num {+ x y}}) (fun 'x (TNum) (add (id 'x) (id 'y)) (TNum)))
 (test (parse '{fun {x : {Num -> Num}} : Num {+ x y}}) (fun 'x (TFun (TNum)(TNum)) (add (id 'x) (id 'y)) (TNum)))|#
+
+
+(deftype Env
+  (emptyEnv)
+  (aEnv id next))
+
+(define empty-env (emptyEnv))
+(define extend-env aEnv)
+
+(define (lookup-env x env)
+  (match env
+    [(emptyEnv)(error "Type error: free identifier: "x)]
+    [(aEnv y next)(if(equal? y x)
+                      (TNum)
+                      (lookup-env x next))]
+    )
+  )
+
+
+(define (typeid expr env)
+  (match expr
+    [(num n)(TNum)]
+    [(id x)(lookup-env x env)]
+    [(add exp1 exp2)(if(and (equal? (typeid exp1 env) (TNum))(equal? (typeid exp2 env) (TNum)))
+                       (TNum)
+                       (error "Bad syntax"))]
+    [(sub exp1 exp2)(if(and (equal? (typeid exp1 env) (TNum))(equal? (typeid exp2 env) (TNum)))
+                       (TNum)
+                       (error "Bad syntax"))]
+    [(fun x type-parameter body type-return)(TFun type-parameter (typeid body (extend-env x env)))]
+    )
+  )
+
+
+
+
+
+
