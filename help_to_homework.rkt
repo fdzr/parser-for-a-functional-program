@@ -57,24 +57,35 @@
     [(list exp1 exp2)(app(parse exp1)(parse exp2))]
     ))
 
-(define (typeof-add expr env)
+(define (typeof-app expr env)
   (match expr
-      [(num x)(TNum)]
+      [(num x)(error("Type error in expresion app position 1: expected (T -> S) found Num" ))]
       [(id x)(lookup-env x env)]
-      [(add exp1 exp2)((typeof-add exp1 env)(typeof-add exp2 env))]
-      [(sub exp1 exp2)((typeof-add exp1 env)(typeof-add exp2 env))]
+      [(add exp1 exp2)((typeof-app exp1 env)(typeof-app exp2 env))]
+      [(sub exp1 exp2)((typeof-app exp1 env)(typeof-app exp2 env))]
       [(fun id type-parameter body type-return)(Func)]
     )
   )
 
-
+(define (is_function? expr env)
+  (match expr
+    [(num n)(error("Type error in expresion app position 1: expected (T -> S) found Num" ))]
+    [(id x) #t]
+    [(add exp1 exp2)(error "Type error in expresion +")]
+    [(sub exp1 exp2)(error "Type error in expresion +")]
+    [(fun id type-parameter body type-return) #t]
+    [(app function arg)(is_function? expr env)]
+    )
+  )
 
 (define (typeof expr env)
+  (print env)
+  (display "\n")
   (match expr
       [(num x)(TNum)]
       [(id x)(lookup-env x env)]
       [(add exp1 exp2)(if(not(equal?(typeof exp1 env) (TNum)))
-                         (error "Type error in expression + position 1: expected Num found " (prettify (typeof exp1 env)))
+                         (error "Type error in expression + position 1: expected Num found" (prettify (typeof exp1 env)))
                        (if(not(equal?(typeof exp2 env) (TNum)))
                           (error (~a "Type error in expresion + position 2: expected Num found"))
                           (TNum)))]
@@ -87,6 +98,9 @@
                                                   (TFun type-parameter (typeof body (extend-env id type-parameter env)))
                                                 (if(equal? type-return (typeof body (extend-env id type-parameter env)))
                                                    (TFun type-parameter (typeof body (extend-env id type-parameter env)))
-                                                   (error (~a "Type error in expression fun position 1: expected" (prettify type-return) " found " (prettify (typeof body env))))))]
+                                                   (error (~a "Type error in expression fun position 1: expected" (prettify type-return) " found " (prettify (typeof body (extend-env id type-parameter env)))))))]
+     #| [(app function arg)(if(is_function? function)
+                            (if(equal?(typeof function env)(typeof arg env))
+                               ))]|#
       )
   )

@@ -70,13 +70,13 @@
 (define (typeof expr)
   (match expr
     [(num x)(TNum)]
-    ;[(id x)(error "Type error: free identifier:" x)]
+    [(id x)(TNum)]
     [(add exp1 exp2)(TNum)]
     [(sub exp1 exp2)(TNum)]
     [(app exp1 exp2)(if (not (is_function? exp1))
                         (error (~a "Type error in app position 1: expected (T -> S) found " (prettify (typeof exp1))))
                     (if (equal? (TFun-arg(typeof exp1)) (typeof exp2))
-                        (typeof exp2)
+                        (TFun-body(typeof exp2))
                         (error (~a "Type error in app position 2: expected " (prettify(TFun-arg(typeof exp1))) " found " (prettify(typeof exp2))))))]
     [(fun id type-parameter body type-return)(if (equal? type-return #f)
                                                  (TFun type-parameter (typeof body))
