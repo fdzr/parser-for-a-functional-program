@@ -106,3 +106,6 @@
                                ))]
       )
   )
+
+(define (typecheck expr)
+  (prettify(typeof (parse expr) empty-env)))
