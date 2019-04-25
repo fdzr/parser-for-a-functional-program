@@ -69,6 +69,7 @@
 
 (define (is_function? expr env)
   (match expr
+    [(TNum)(error("Type error in expression app position 1: expected (T -> S) found Num"))]
     [(num n)(error("Type error in expresion app position 1: expected (T -> S) found Num" ))]
     [(id x) #t]
     [(add exp1 exp2)(error "Type error in expresion +")]
@@ -79,15 +80,13 @@
   )
 
 (define (typeof expr env)
-  (print env)
-  (display "\n")
   (match expr
       [(num x)(TNum)]
       [(id x)(lookup-env x env)]
       [(add exp1 exp2)(if(not(equal?(typeof exp1 env) (TNum)))
                          (error "Type error in expression + position 1: expected Num found" (prettify (typeof exp1 env)))
                        (if(not(equal?(typeof exp2 env) (TNum)))
-                          (error (~a "Type error in expresion + position 2: expected Num found"))
+                          (error (~a "Type error in expresion + position 2: expected Num found " (prettify (typeof exp2 env))))
                           (TNum)))]
       [(sub exp1 exp2)(if(not(equal?(typeof exp1 env) (TNum)))
                          (error "Type error in expression + position 1: expected Num found ")
@@ -99,8 +98,11 @@
                                                 (if(equal? type-return (typeof body (extend-env id type-parameter env)))
                                                    (TFun type-parameter (typeof body (extend-env id type-parameter env)))
                                                    (error (~a "Type error in expression fun position 1: expected" (prettify type-return) " found " (prettify (typeof body (extend-env id type-parameter env)))))))]
-     #| [(app function arg)(if(is_function? function)
-                            (if(equal?(typeof function env)(typeof arg env))
-                               ))]|#
+      [(app function arg)(if(not(TFun? (typeof function env)))
+                            (error "Type error in expression app position 1: expected (T -> S) found" (prettify(typeof function env)))
+                            (if(equal?(TFun-arg(typeof function env))(typeof arg env))
+                               (TFun-body(typeof function env))
+                               (error ("Type error in expression app position 2: expected " (prettify (TFun-arg(typeof function env))) "found" (prettify (typeof arg env))))
+                               ))]
       )
   )
