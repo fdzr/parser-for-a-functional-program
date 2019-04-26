@@ -5,7 +5,6 @@
 (deftype AE
   (Num)
   (TNum)
-  (Func)
   (TFun arg body))
 
 (deftype Expr
@@ -59,27 +58,7 @@
     [(list exp1 exp2)(app(parse exp1)(parse exp2))]
     ))
 
-(define (typeof-app expr env)
-  (match expr
-      [(num x)(error("Type error in expresion app position 1: expected (T -> S) found Num" ))]
-      [(id x)(lookup-env x env)]
-      [(add exp1 exp2)((typeof-app exp1 env)(typeof-app exp2 env))]
-      [(sub exp1 exp2)((typeof-app exp1 env)(typeof-app exp2 env))]
-      [(fun id type-parameter body type-return)(Func)]
-    )
-  )
-
-(define (is_function? expr env)
-  (match expr
-    [(TNum)(error("Type error in expression app position 1: expected (T -> S) found Num"))]
-    [(num n)(error("Type error in expresion app position 1: expected (T -> S) found Num" ))]
-    [(id x) #t]
-    [(add exp1 exp2)(error "Type error in expresion +")]
-    [(sub exp1 exp2)(error "Type error in expresion +")]
-    [(fun id type-parameter body type-return) #t]
-    [(app function arg)(is_function? expr env)]
-    )
-  )
+; 2 ejercicio
 
 (define (typeof expr env)
   (match expr
@@ -112,6 +91,19 @@
 (define (typecheck expr)
   (prettify(typeof (parse expr) empty-env)))
 
+
+; 3 ejercicios
+
+(deftype AST-for-De-Bruijn
+  (ADD)
+  (SUB)
+  (INT-CONST n)
+  (RETURN)
+  (APPLY)
+  (CLOSURE exp)
+  (ACCESS n)
+  )
+
 (define (deBruijn expr env)
   (match expr
     [(num n)(num n)]
@@ -130,5 +122,22 @@
     [(aEnv id type-return next)(if(equal? id x)
                        initializer
                       (lookup-env-set-indice x next (+ 1 initializer)))]
+    )
+  )
+
+(define (compile-aux e1 e2 e3)
+  (match (list e1 e2 e3)
+    [x x]
+    )
+  )
+
+(define (compile expr)
+  (match expr
+    [(num x)(INT-CONST x)]
+    [(acc n)(ACCESS n)]
+    [(add exp1 exp2)(compile-aux (compile exp2)(compile exp1)(ADD))]
+    [(sub exp1 exp2)((compile exp2)(compile exp1)(SUB))]
+    [(fun-db body)(CLOSURE (list (compile expr) (RETURN)))]
+    [(app function arg)(compile-aux (compile arg)(compile function) (APPLY))]
     )
   )
