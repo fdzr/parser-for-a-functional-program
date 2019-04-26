@@ -60,36 +60,39 @@
 
 ; 2 ejercicio
 
-(define (typeof expr env)
+(define (typeof-aux expr env)
   (match expr
       [(num x)(TNum)]
       [(id x)(lookup-env x env)]
-      [(add exp1 exp2)(if(not(equal?(typeof exp1 env) (TNum)))
-                         (error "Type error in expression + position 1: expected Num found" (prettify (typeof exp1 env)))
-                       (if(not(equal?(typeof exp2 env) (TNum)))
-                          (error (~a "Type error in expresion + position 2: expected Num found " (prettify (typeof exp2 env))))
+      [(add exp1 exp2)(if(not(equal?(typeof-aux exp1 env) (TNum)))
+                         (error "Type error in expression + position 1: expected Num found" (prettify (typeof-aux exp1 env)))
+                       (if(not(equal?(typeof-aux exp2 env) (TNum)))
+                          (error (~a "Type error in expresion + position 2: expected Num found " (prettify (typeof-aux exp2 env))))
                           (TNum)))]
-      [(sub exp1 exp2)(if(not(equal?(typeof exp1 env) (TNum)))
+      [(sub exp1 exp2)(if(not(equal?(typeof-aux exp1 env) (TNum)))
                          (error "Type error in expression + position 1: expected Num found ")
-                       (if(not(equal?(typeof exp2 env) (TNum)))
+                       (if(not(equal?(typeof-aux exp2 env) (TNum)))
                           (error (~a "Type error in expresion + position 2: expected Num found"))
                           (TNum)))]
       [(fun id type-parameter body type-return)(if(equal? type-return #f)
-                                                  (TFun type-parameter (typeof body (extend-env id type-parameter env)))
-                                                (if(equal? type-return (typeof body (extend-env id type-parameter env)))
-                                                   (TFun type-parameter (typeof body (extend-env id type-parameter env)))
-                                                   (error (~a "Type error in expression fun position 1: expected" (prettify type-return) " found " (prettify (typeof body (extend-env id type-parameter env)))))))]
-      [(app function arg)(if(not(TFun? (typeof function env)))
-                            (error "Type error in expression app position 1: expected (T -> S) found" (prettify(typeof function env)))
-                            (if(equal?(TFun-arg(typeof function env))(typeof arg env))
-                               (TFun-body(typeof function env))
-                               (error ("Type error in expression app position 2: expected " (prettify (TFun-arg(typeof function env))) "found" (prettify (typeof arg env))))
+                                                  (TFun type-parameter (typeof-aux body (extend-env id type-parameter env)))
+                                                (if(equal? type-return (typeof-aux body (extend-env id type-parameter env)))
+                                                   (TFun type-parameter (typeof-aux body (extend-env id type-parameter env)))
+                                                   (error (~a "Type error in expression fun position 1: expected" (prettify type-return) " found " (prettify (typeof-aux body (extend-env id type-parameter env)))))))]
+      [(app function arg)(if(not(TFun? (typeof-aux function env)))
+                            (error "Type error in expression app position 1: expected (T -> S) found" (prettify(typeof-aux function env)))
+                            (if(equal?(TFun-arg(typeof-aux function env))(typeof-aux arg env))
+                               (TFun-body(typeof-aux function env))
+                               (error ("Type error in expression app position 2: expected " (prettify (TFun-arg(typeof-aux function env))) "found" (prettify (typeof-aux arg env))))
                                ))]
       )
   )
 
+(define (typeof expr)
+  (typeof-aux expr empty-env))
+
 (define (typecheck expr)
-  (prettify(typeof (parse expr) empty-env)))
+  (prettify(typeof (parse expr))))
 
 
 ; 3 ejercicios
@@ -104,16 +107,19 @@
   (ACCESS n)
   )
 
-(define (deBruijn expr env)
+(define (deBruijn-aux expr env)
   (match expr
     [(num n)(num n)]
     [(id x)(acc (lookup-env-set-indice x env 0))]
-    [(add exp1 exp2)(add (deBruijn exp1 env)(deBruijn exp2 env))]
-    [(sub exp1 exp2)(add (deBruijn exp1 env)(deBruijn exp2 env))]
-    [(fun id type-parameter body type-return)(fun-db (deBruijn body (extend-env id 0 env)))]
-    [(app function arg)(app (deBruijn function env)(deBruijn arg env))]
+    [(add exp1 exp2)(add (deBruijn-aux exp1 env)(deBruijn-aux exp2 env))]
+    [(sub exp1 exp2)(add (deBruijn-aux exp1 env)(deBruijn-aux exp2 env))]
+    [(fun id type-parameter body type-return)(fun-db (deBruijn-aux body (extend-env id 0 env)))]
+    [(app function arg)(app (deBruijn-aux function env)(deBruijn-aux arg env))]
     )
   )
+
+(define (deBruijn expr)
+  (deBruijn-aux expr empty-env))
 
 ;(aEnv 'y 0 (aEnv 'x 0 (emptyEnv)))
 (define (lookup-env-set-indice x env initializer)
@@ -125,17 +131,24 @@
     )
   )
 
-(define (compile-aux expr)
-  (flatten expr)
+(define (compile expr)
+  (flatten (compile-aux expr))
   )
 
-(define (compile expr)
+(define (compile-aux expr)
   (match expr
     [(num x)(INT-CONST x)]
     [(acc n)(ACCESS n)]
-    [(add exp1 exp2)(list(compile exp2)(compile exp1)(ADD))]
-    [(sub exp1 exp2)(list(compile exp2)(compile exp1)(SUB))]
-    [(fun-db body)(CLOSURE (flatten (list(compile body)(RETURN))))]
-    [(app function arg)(list(compile arg)(compile function) (APPLY))]
+    [(add exp1 exp2)(list(compile-aux exp2)(compile-aux exp1)(ADD))]
+    [(sub exp1 exp2)(list(compile-aux exp2)(compile-aux exp1)(SUB))]
+    [(fun-db body)(CLOSURE (flatten (list(compile-aux body)(RETURN))))]
+    [(app function arg)(list(compile-aux arg)(compile-aux function) (APPLY))]
     )
+  )
+
+(define (typed-compile s-expr)
+  (def s_exp_parse (parse s-expr))
+  (if (typeof s_exp_parse)
+      (compile(deBruijn s_exp_parse))
+      (error "Some error happened..."))
   )
