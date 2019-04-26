@@ -13,6 +13,8 @@
   (add l r)
   (sub l r)
   (id x)
+  (fun-db exp)
+  (acc n)
   (app fun exp)
   (fun parameter type body type-return))
 
@@ -109,3 +111,24 @@
 
 (define (typecheck expr)
   (prettify(typeof (parse expr) empty-env)))
+
+(define (deBruijn expr env)
+  (match expr
+    [(num n)(num n)]
+    [(id x)(acc (lookup-env-set-indice x env 0))]
+    [(add exp1 exp2)(add (deBruijn exp1 env)(deBruijn exp2 env))]
+    [(sub exp1 exp2)(add (deBruijn exp1 env)(deBruijn exp2 env))]
+    [(fun id type-parameter body type-return)(fun-db (deBruijn body (extend-env id 0 env)))]
+    [(app function arg)(app (deBruijn function env)(deBruijn arg env))]
+    )
+  )
+
+;(aEnv 'y 0 (aEnv 'x 0 (emptyEnv)))
+(define (lookup-env-set-indice x env initializer)
+  (match env
+    [(emptyEnv)(error "Free identifier: "x)]
+    [(aEnv id type-return next)(if(equal? id x)
+                       initializer
+                      (lookup-env-set-indice x next (+ 1 initializer)))]
+    )
+  )
