@@ -100,7 +100,7 @@
   (INT-CONST n)
   (RETURN)
   (APPLY)
-  (CLOSURE exp)
+  (CLOSURE function-body return)
   (ACCESS n)
   )
 
@@ -125,19 +125,18 @@
     )
   )
 
-(define (compile-aux e1 e2 e3)
-  (match (list e1 e2 e3)
-    [x x]
-    )
+(define (compile-aux expr)
+  (match expr
+    [x x])
   )
 
 (define (compile expr)
   (match expr
     [(num x)(INT-CONST x)]
     [(acc n)(ACCESS n)]
-    [(add exp1 exp2)(compile-aux (compile exp2)(compile exp1)(ADD))]
-    [(sub exp1 exp2)((compile exp2)(compile exp1)(SUB))]
-    [(fun-db body)(CLOSURE (list (compile expr) (RETURN)))]
-    [(app function arg)(compile-aux (compile arg)(compile function) (APPLY))]
+    [(add exp1 exp2)(list(compile exp2)(compile exp1)(ADD))]
+    [(sub exp1 exp2)(list(compile exp2)(compile exp1)(SUB))]
+    [(fun-db body)(CLOSURE (compile body) (RETURN))]
+    [(app function arg)(list(compile arg)(compile function) (APPLY))]
     )
   )
